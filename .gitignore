@@ -1,0 +1,52 @@
+# Node.js & npm/yarn logs
+**/logs
+**/*.log
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+
+# Environment variable files
+**/.env
+**/.env.*.local
+**/.env.local
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Dependency directories
+**/node_modules
+
+# Build output
+**/dist
+**/build
+
+# TypeScript
+**/*.tsbuildinfo
+
+# Vite or React-specific cache
+**/.vite
+**/.vite-inspect
+**/.cache
+**/.eslintcache
+
+# Testing/coverage
+**/coverage
+**/test-results
+**/cypress/screenshots
+**/cypress/videos
+
+# IDE/editor
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Temporary files
+**/tmp
+**/temp
+
+# cricnrr-specific (React TS app)
+frontend/cricnrr/public/mockServiceWorker.js
+frontend/cricnrr/public/mockServiceWorker.js.map
+frontend/cricnrr/mockServiceWorker.js
