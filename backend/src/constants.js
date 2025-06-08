@@ -61,6 +61,11 @@ const pointsTable = [
     },
 ]
 
+const POINTS_PER_WIN = 2
+const NRR_PRECISION = 3
+
 module.exports = {
-    pointsTable
+    pointsTable,
+    POINTS_PER_WIN,
+    NRR_PRECISION
 }

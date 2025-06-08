@@ -1,7 +1,7 @@
 import { joiResolver } from '@hookform/resolvers/joi';
 import { useForm } from 'react-hook-form';
 import swal from 'sweetalert';
-import { calculatenrr } from '../api/calculate-nrr';
+import { calculateNrr } from '../api/calculate-nrr';
 import { getSchema } from '../utils/schemas';
 import type { CalculateNRRData, PointsTableType } from '../utils/types';
 
@@ -12,7 +12,7 @@ const CalculateNRRForm = ({ pointsData }: { pointsData: PointsTableType[] }) => 
         register,
         handleSubmit,
         watch,
-        formState: { errors }
+        formState: { errors, isValid }
     } = useForm<CalculateNRRData>({
         defaultValues: {
             myTeam: '',
@@ -29,7 +29,7 @@ const CalculateNRRForm = ({ pointsData }: { pointsData: PointsTableType[] }) => 
     const oppTeam = watch('oppTeam');
 
     const onSubmit = async (data: any) => {
-        const res = await calculatenrr(data);
+        const res = await calculateNrr(data);
         if (res.status) {
             const message = res.message.join('\n\n')
             swal(message, {
@@ -117,7 +117,7 @@ const CalculateNRRForm = ({ pointsData }: { pointsData: PointsTableType[] }) => 
                 {/* Submit Button */}
                 <div className="row mt-4">
                     <div className="offset-2 col-10">
-                        <button type="submit" className="btn btn-primary">Submit</button>
+                        <button disabled={!isValid} type="submit" className="btn btn-primary">Submit</button>
                     </div>
                 </div>
             </form>
