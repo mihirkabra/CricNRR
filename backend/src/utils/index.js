@@ -77,7 +77,6 @@ function calculateRunsToRestrict(body) {
     const oppTeamObj = getTeam(oppTeam)
 
     // Get Index of the teams in present in the points table.
-    const myTeamIndex = getTeamIndex(myTeam)
     const oppTeamIndex = getTeamIndex(oppTeam)
 
     // The required NRR to surpass the team currently at the desired position.
@@ -87,17 +86,15 @@ function calculateRunsToRestrict(body) {
     const myPointsAfterWin = myTeamObj.points + POINTS_PER_WIN
     // Points of the team currently at the desired position.
     const desiredPositionPoints = pointsTable[desiredPosition - 1].points
-    // Check if teams are placed adjacent to each other in the points table.
-    const areTeamsAdjacent = myTeamIndex === oppTeamIndex + 1
 
     let results // results of the calculation
     let xRunsMax = null // Max limit of the margin
     let xRunsMin = null // Min limit of the margin
     // If the points of myTeam (after winning the match) are equal to the points of the team present at the desired position and,
-    // desired position is equal to the position of the oppTeam in the points table, the calculate NRR with impact.
-    if (myPointsAfterWin === desiredPositionPoints && (desiredPosition - 1) === oppTeamIndex) {
-        // Case for teams placed adjacent in the points table
-        results = calculateNrrWithImpact(myTeamObj, oppTeamObj, runs, overs, battingFirst, areTeamsAdjacent, desiredPosition)
+    // desired position is equal of above to the position of the oppTeam in the points table and,
+    // If the points of myTeam (after winning the match) are equal to the points of the oppTeam, then calculate NRR with impact
+    if (myPointsAfterWin === desiredPositionPoints && myPointsAfterWin === oppTeamObj.points && oppTeamIndex <= (desiredPosition - 1)) {
+        results = calculateNrrWithImpact(myTeamObj, oppTeamObj, runs, overs, battingFirst, desiredPosition)
         xRunsMax = results[0].length > 0 ? Math.max(...results[0]) + 1 : null // Add 1 as calculateNrrWithImpact returns the maximum runs that myTeam can concede so that their NRR remains higher than oppTeam.
         xRunsMin = results[0].length > 0 ? Math.min(...results[0]) : null
 
@@ -141,29 +138,24 @@ function calculateOversToChase(body) {
     const oppTeamObj = getTeam(oppTeam)
 
     // Get Index of the teams in present in the points table.
-    const myTeamIndex = getTeamIndex(myTeam)
     const oppTeamIndex = getTeamIndex(oppTeam)
 
     // The required NRR to surpass the team currently at the desired position.
     const requiredNrr = pointsTable[desiredPosition - 1].nrr
-    // COnvert input overs to decimal overs
-    const decimalOvers = oversToDecimalOvers(overs)
 
     // Points if myTeam wins the next match.
     const myPointsAfterWin = myTeamObj.points + POINTS_PER_WIN
     // Points of the team currently at the desired position.
     const desiredPositionPoints = pointsTable[desiredPosition - 1].points
-    // Check if teams are placed adjacent to each other in the points table.
-    const areTeamsAdjacent = myTeamIndex === oppTeamIndex + 1
 
     let results // results of the calculation 
     let xOversMax = null // Max limit of the margin
     let xOversMin = null // Min limit of the margin
     // If the points of myTeam (after winning the match) are equal to the points of the team present at the desired position and,
-    // desired position is equal to the position of the oppTeam in the points table, the calculate NRR with impact.
-    if (myPointsAfterWin === desiredPositionPoints && (desiredPosition - 1) === oppTeamIndex) {
-        // Case for teams placed adjacent in the points table
-        results = calculateNrrWithImpact(myTeamObj, oppTeamObj, runs, overs, battingFirst, areTeamsAdjacent, desiredPosition)
+    // desired position is equal of above to the position of the oppTeam in the points table and,
+    // If the points of myTeam (after winning the match) are equal to the points of the oppTeam, then calculate NRR with impact
+    if (myPointsAfterWin === desiredPositionPoints && myPointsAfterWin === oppTeamObj.points && oppTeamIndex <= (desiredPosition - 1)) {
+        results = calculateNrrWithImpact(myTeamObj, oppTeamObj, runs, overs, battingFirst, desiredPosition)
         xOversMax = results[0].length > 0 ? Math.max(...results[0]) : null
         xOversMin = results[0].length > 0 ? Math.min(...results[0]) : null
         if (results[0].length === 0) {
@@ -214,20 +206,16 @@ function calculateNRR(myTeamObj, runsScored, overBowled, runsConceded, oversBatt
     return parseFloat((myNrr - oppNrr).toFixed(NRR_PRECISION))
 }
 
-// Function to calculate the NRR considering the loss impact on the oppTeam. Will be used in case if the teams are place adjacent to each other in the points table or has the same points as myTeam (after winning the match).
-function calculateNrrWithImpact(myTeamObj, oppTeamObj, runs, overs, battingFirst, areTeamsAdjacent, desiredPosition) {
+// Function to calculate the NRR considering the loss impact on the oppTeam.
+function calculateNrrWithImpact(myTeamObj, oppTeamObj, runs, overs, battingFirst, desiredPosition) {
 
-    const belowTeamIndex = getTeamIndex(oppTeamObj.team) + 1 // Index of the team placed after the oppTeam in the points table.
-    const belowTeamNrr = pointsTable[belowTeamIndex].nrr // NRR of the team placed after the oppTeam in the points table.
-
-    let teamAboveNrr
-    if ((desiredPosition - 1) === 0) {
-        // If the oppTeam is at the 1st position then teamAboveNrr becomes irrelevant. Hence we can use 9999 as upper limit.
-        teamAboveNrr = 9999
-    } else {
-        // If the oppTeam is not at the first position then use the NRR of the team above the oppTeam.
-        teamAboveNrr = pointsTable[(desiredPosition - 1) - 1].nrr
-    }
+    // Getting the desired constants need to calculate the NRR with possible impacts.
+    const oppTeamIndex = getTeamIndex(oppTeamObj.team)
+    const topTeamIndex = (desiredPosition - 1) - 1
+    const belowTeamIndex = (desiredPosition - 1) + 1
+    const topTeamObj = ((desiredPosition - 1) === 0) ? { points: 9999, nrr: 9999 } : pointsTable[topTeamIndex] // If desired position is 1 then there is not top team hence adding a imaginary upper boundary
+    const belowTeamObj = pointsTable[belowTeamIndex]
+    const desiredTeamObj = pointsTable[desiredPosition - 1]
 
     const resultArray = [] // Array that stores all the winning conditions.
     const resultNrrArray = [] // Array that stores the NRR for all the winning conditions.
@@ -237,17 +225,28 @@ function calculateNrrWithImpact(myTeamObj, oppTeamObj, runs, overs, battingFirst
             const updatedMyNrr = calculateNRR(myTeamObj, runs, overs, oppRuns, overs)
             const updatedOppNrr = calculateNRR(oppTeamObj, oppRuns, overs, runs, overs)
 
-            // If the teams are placed adjacently, then no need to consider the NRR of the midTeam.
-            if (areTeamsAdjacent) {
-                if (updatedMyNrr > updatedOppNrr && updatedMyNrr < teamAboveNrr) {
+            // If teams are place adjacently
+            if (oppTeamIndex === (desiredPosition - 1)) {
+                if (updatedMyNrr > updatedOppNrr
+                    && (belowTeamObj.points < (myTeamObj.points + POINTS_PER_WIN) || updatedMyNrr > belowTeamObj.nrr) // check NRR of the team below only when it has same points as myTeam after winning a match.
+                    && (topTeamObj.points > (myTeamObj.points + POINTS_PER_WIN) || updatedMyNrr < topTeamObj.nrr)) // check NRR of the team above only when it has same points as myTeam after winning a match.
+                {
                     resultArray.push(oppRuns)
                     resultNrrArray.push(updatedMyNrr)
                 }
             } else {
-                // If the teams are not placed adjacently, then we'll have to compare the updated NRR of myTeam with the NRR of the midTeam.
-                if (updatedMyNrr > updatedOppNrr && updatedMyNrr > belowTeamNrr && updatedMyNrr < teamAboveNrr) {
-                    resultArray.push(oppRuns)
-                    resultNrrArray.push(updatedMyNrr)
+                // If the oppTeam exactly above the desired position in the points table.
+                if (oppTeamIndex === (desiredPosition - 1 - 1)) {
+                    if (updatedMyNrr < updatedOppNrr && updatedMyNrr > desiredTeamObj.nrr) {
+                        resultArray.push(oppRuns)
+                        resultNrrArray.push(updatedMyNrr)
+                    }
+                } else {
+                    // If the oppTeam is further above the desired position in the points table.
+                    if (updatedMyNrr < updatedOppNrr && updatedMyNrr < topTeamObj.nrr && updatedMyNrr > desiredTeamObj.nrr) {
+                        resultArray.push(oppRuns)
+                        resultNrrArray.push(updatedMyNrr)
+                    }
                 }
             }
         }
@@ -257,19 +256,31 @@ function calculateNrrWithImpact(myTeamObj, oppTeamObj, runs, overs, battingFirst
             const updatedMyNrr = calculateNRR(myTeamObj, runs + 1, overs, runs, ballsToOvers(o))
             const updatedOppNrr = calculateNRR(oppTeamObj, runs, ballsToOvers(o), runs + 1, overs)
 
-            // If the teams are placed adjacently, then no need to consider the NRR of the midTeam.
-            if (areTeamsAdjacent) {
-                if (updatedMyNrr > updatedOppNrr && updatedMyNrr < teamAboveNrr) {
+            // If teams are place adjacently
+            if (oppTeamIndex === (desiredPosition - 1)) {
+                if (updatedMyNrr > updatedOppNrr
+                    && (belowTeamObj.points < (myTeamObj.points + POINTS_PER_WIN) || updatedMyNrr > belowTeamObj.nrr) // check NRR of the team below only when it has same points as myTeam after winning a match.
+                    && (topTeamObj.points > (myTeamObj.points + POINTS_PER_WIN) || updatedMyNrr < topTeamObj.nrr)) // check NRR of the team above only when it has same points as myTeam after winning a match. 
+                {
                     // Convert balls to overs and return the value.
                     resultArray.push(ballsToOvers(o))
                     resultNrrArray.push(updatedMyNrr)
                 }
             } else {
-                // If the teams are not placed adjacently, then we'll have to compare the updated NRR of myTeam with the NRR of the midTeam.
-                if (updatedMyNrr > updatedOppNrr && updatedMyNrr > belowTeamNrr && updatedMyNrr < teamAboveNrr) {
-                    // Convert balls to overs and return the value.
-                    resultArray.push(ballsToOvers(o))
-                    resultNrrArray.push(updatedMyNrr)
+                // If the oppTeam exactly above the desired position in the points table.
+                if (oppTeamIndex === (desiredPosition - 1 - 1)) {
+                    if (updatedMyNrr < updatedOppNrr && updatedMyNrr > desiredTeamObj.nrr) {
+                        // Convert balls to overs and return the value.
+                        resultArray.push(ballsToOvers(o))
+                        resultNrrArray.push(updatedMyNrr)
+                    }
+                } else {
+                    // If the oppTeam is further above the desired position in the points table.
+                    if (updatedMyNrr < updatedOppNrr && updatedMyNrr < topTeamObj.nrr && updatedMyNrr > desiredTeamObj.nrr) {
+                        // Convert balls to overs and return the value.
+                        resultArray.push(ballsToOvers(o))
+                        resultNrrArray.push(updatedMyNrr)
+                    }
                 }
             }
         }
